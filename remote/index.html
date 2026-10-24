@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>OpenTV Remote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Same look as the TV: the TV's own background, blurred, with glass on top. */
+  :root {
+    --text: #fff; --text-2: rgba(255,255,255,.72); --text-3: rgba(255,255,255,.5);
+    --glass: rgba(255,255,255,.12); --glass-2: rgba(255,255,255,.2); --edge: rgba(255,255,255,.18);
+    --danger: #ff6b5e; --ui: "Inter", -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: #000; color: var(--text); font-family: var(--ui); -webkit-font-smoothing: antialiased; }
+  button, textarea { font-family: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .hidden { display: none !important; }
+
+  #wall { position: fixed; inset: -40px; background: #222 center/cover; filter: blur(34px) saturate(140%); transform: scale(1.1); transition: background-image .6s ease; }
+  #shade { position: fixed; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55)); }
+  .glass { background: var(--glass); border: 1px solid var(--edge); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); }
+
+  #app { position: relative; max-width: 520px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 110px); }
+
+  /* header: back is always one tap away */
+  header { position: sticky; top: calc(env(safe-area-inset-top) + 8px); z-index: 5; display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .round { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; padding: 0; }
+  .round svg { width: 24px; height: 24px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .round:active { background: var(--glass-2); transform: scale(.94); }
+  .title { flex: 1 1 auto; text-align: center; }
+  .title b { display: block; font-size: 18px; font-weight: 600; }
+  .conn { font-size: 13px; color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .conn i { width: 7px; height: 7px; border-radius: 50%; background: #3ddc84; display: inline-block; }
+  .conn.off i { background: var(--danger); }
+
+  h2 { font-size: 28px; font-weight: 600; letter-spacing: -.4px; margin: 0 0 4px; }
+  .lede { color: var(--text-2); font-size: 15px; margin: 0 0 16px; line-height: 1.45; }
+  .section { font-size: 13px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-2); margin: 28px 0 12px; }
+  .pane { display: none; animation: fade .25s ease; }
+  .pane.on { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* d-pad */
+  .pad { position: relative; width: 290px; height: 290px; margin: 6px auto 24px; border-radius: 50%; }
+  .pad button { position: absolute; border: 0; background: transparent; width: 92px; height: 92px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .pad button svg { width: 30px; height: 30px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .pad button:active { background: var(--glass-2); }
+  .pad .up { left: 99px; top: 4px; } .pad .down { left: 99px; bottom: 4px; }
+  .pad .left { left: 4px; top: 99px; } .pad .right { right: 4px; top: 99px; }
+  .pad .ok { left: 87px; top: 87px; width: 116px; height: 116px; background: #fff; color: #111; font-size: 19px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .pad .ok:active { background: #ddd; transform: scale(.96); }
+  .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .key { height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 17px; font-weight: 600; }
+  .key svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .key:active { background: var(--glass-2); transform: scale(.97); }
+
+  .jump { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .jcard { border-radius: 20px; padding: 16px; text-align: left; display: flex; align-items: center; gap: 12px; min-height: 70px; }
+  .jcard:active { background: var(--glass-2); transform: scale(.97); }
+  .jcard .ic { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; background: rgba(255,255,255,.14); }
+  .jcard .ic svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .jcard .ic.hf { background: #D1FE17; }
+  .jcard .ic.hf img { width: 26px; height: 26px; }
+  .jcard b { display: block; font-size: 15.5px; font-weight: 600; }
+  .jcard span { font-size: 13px; color: var(--text-2); }
+
+  .rail { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 4px 16px 6px; scrollbar-width: none; }
+  .rail::-webkit-scrollbar { display: none; }
+  .pcard { flex: 0 0 auto; width: 170px; scroll-snap-align: start; border: 0; background: transparent; padding: 0; text-align: left; }
+  .pcard .th { width: 170px; height: 96px; border-radius: 14px; background: rgba(255,255,255,.1) center/cover; position: relative; }
+  .pcard .th .tag { position: absolute; left: 8px; top: 8px; font-size: 11px; font-weight: 600; background: rgba(0,0,0,.55); padding: 3px 8px; border-radius: 999px; }
+  .pcard .nm { font-size: 14px; font-weight: 600; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pcard .sb { font-size: 12.5px; color: var(--text-3); margin-top: 2px; }
+  .pcard.on .th { box-shadow: 0 0 0 3px #fff; }
+  .pcard:active .th { transform: scale(.97); }
+
+  .bggrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .bgcard { border: 0; padding: 0; border-radius: 14px; aspect-ratio: 16 / 9; background: rgba(255,255,255,.1) center/cover; position: relative; overflow: hidden; }
+  .bgcard span { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 10px 7px; font-size: 12.5px; font-weight: 600; text-align: left; background: linear-gradient(0deg, rgba(0,0,0,.6), rgba(0,0,0,0)); }
+  .bgcard.on { box-shadow: 0 0 0 3px #fff; }
+
+  /* forms */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 16px; margin-bottom: 18px; }
+  .seg button { border: 0; background: transparent; padding: 11px; border-radius: 12px; font-size: 15px; font-weight: 600; color: var(--text-2); }
+  .seg button.on { background: #fff; color: #111; }
+  label { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-2); margin: 16px 0 8px; }
+  textarea { width: 100%; border-radius: 16px; font-size: 17px; line-height: 1.45; padding: 14px 16px; resize: none; outline: none; }
+  textarea:focus { background: var(--glass-2); }
+  textarea::placeholder { color: rgba(255,255,255,.42); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { border-radius: 999px; font-size: 13.5px; padding: 8px 13px; text-align: left; }
+  .chip:active { background: var(--glass-2); }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .opt { border-radius: 14px; padding: 11px 13px; text-align: left; font-size: 15px; }
+  .opt b { display: block; font-size: 15px; }
+  .opt span { color: var(--text-3); font-size: 12.5px; }
+  .opt.on { background: #fff; color: #111; border-color: #fff; }
+  .opt.on span { color: #555; }
+  .photo { width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text-2); font-size: 15px; text-align: center; padding: 0 20px; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; }
+  .price { font-size: 14.5px; color: var(--text-2); margin: 18px 0 12px; }
+  .price b { color: #fff; font-size: 16px; }
+  .btn { width: 100%; border: 0; border-radius: 16px; font-size: 17px; font-weight: 600; padding: 16px; }
+  .btn.primary { background: #fff; color: #111; }
+  .btn.neutral { margin-top: 10px; }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { opacity: .6; }
+  .msg { font-size: 14.5px; margin-top: 10px; min-height: 20px; line-height: 1.4; color: var(--text-2); }
+  .msg.err { color: var(--danger); }
+  .jobs { margin-top: 26px; border-radius: 18px; padding: 6px 16px; }
+  .job { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; font-size: 14.5px; }
+  .job + .job { border-top: 1px solid rgba(255,255,255,.1); }
+  .job .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .job .s { color: var(--text-2); flex: 0 0 auto; }
+  .job .s.failed { color: var(--danger); }
+
+  /* bottom tab bar */
+  nav {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 14px); z-index: 6;
+    width: min(488px, calc(100% - 32px)); display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 6px; border-radius: 26px;
+    box-shadow: 0 14px 40px rgba(0,0,0,.35);
+  }
+  nav button { border: 0; background: transparent; border-radius: 20px; padding: 9px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+  nav button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  nav button.on { background: rgba(255,255,255,.92); color: #111; }
+</style>
+</head>
+<body>
+<div id="wall"></div><div id="shade"></div>
+<div id="app">
+  <header>
+    <button class="round glass" data-cmd="back" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="title"><b>OpenTV</b><span class="conn" id="conn"><i></i><span id="connText">Connecting...</span></span></div>
+    <button class="round glass" data-cmd="home" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></button>
+  </header>
+
+  <!-- REMOTE -->
+  <section class="pane on" id="pane-remote">
+    <div class="pad glass">
+      <button class="up" data-cmd="up" aria-label="Up"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+      <button class="left" data-cmd="left" aria-label="Left"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <button class="ok" data-cmd="ok">OK</button>
+      <button class="right" data-cmd="right" aria-label="Right"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="down" data-cmd="down" aria-label="Down"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    </div>
+    <div class="keys">
+      <button class="key glass" data-cmd="back"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Back</button>
+      <button class="key glass" data-cmd="home"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg>Home</button>
+    </div>
+
+    <div class="section">Open on the TV</div>
+    <div class="jump">
+      <button class="jcard glass" data-cmd="open:studio"><span class="ic hf"><img src="/tv/logos/higgsfield.svg" alt=""></span><div><b>AI Studio</b><span>Make something</span></div></button>
+      <button class="jcard glass" data-cmd="open:look"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.8-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/></svg></span><div><b>Appearance</b><span>Change the look</span></div></button>
+      <button class="jcard glass" data-cmd="open:designs"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg></span><div><b>Designs</b><span>Pick a new layout</span></div></button>
+      <button class="jcard glass" data-cmd="open:settings"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><div><b>Settings</b><span>Account and model</span></div></button>
+    </div>
+
+    <div id="madeBox">
+      <div class="section">Play on the TV</div>
+      <div class="rail" id="made"></div>
+    </div>
+  </section>
+
+  <!-- DESIGN -->
+  <section class="pane" id="pane-design">
+    <h2>Make the TV yours</h2>
+    <p class="lede">Tap a design or a background. The TV changes right away.</p>
+    <div class="section">Design</div>
+    <div class="rail" id="designs"></div>
+    <div class="section">Background</div>
+    <div class="bggrid" id="bgs"></div>
+
+    <div class="section">Make a background with AI</div>
+    <div class="seg glass" id="bgType"></div>
+    <textarea id="bgPrompt" class="glass" rows="2" placeholder="A quiet Japanese garden in autumn, red maple leaves over a koi pond"></textarea>
+    <div class="chips" id="bgChips"></div>
+    <div class="price">This costs about <b id="bgPrice">...</b></div>
+    <button class="btn primary" id="bgSend">Send to TV</button>
+    <div class="msg" id="bgMsg"></div>
+  </section>
+
+  <!-- CREATE -->
+  <section class="pane" id="pane-create">
+    <h2>Make something</h2>
+    <p class="lede">It plays on the TV when it's ready. Made with Higgsfield.</p>
+    <div class="seg glass" id="mode"></div>
+
+    <div id="photoPart" class="hidden">
+      <div class="photo glass" id="photoBox">No photo yet</div>
+      <button class="btn neutral glass" id="photoPick">Choose a photo</button>
+      <input type="file" id="photoFile" accept="image/*" hidden>
+    </div>
+    <label for="prompt" id="promptLabel">Describe your video</label>
+    <textarea id="prompt" class="glass" rows="3"></textarea>
+    <div class="chips" id="chips"></div>
+    <label>Video model</label>
+    <div class="opts" id="engines"></div>
+    <label>Length</label>
+    <div class="opts" id="lengths"></div>
+    <div class="price">This costs about <b id="price">...</b></div>
+    <button class="btn primary" id="send">Send to TV</button>
+    <div class="msg" id="msg"></div>
+
+    <div class="jobs glass hidden" id="jobsBox"><div id="jobs"></div></div>
+  </section>
+</div>
+
+<nav class="glass">
+  <button class="on" data-pane="remote"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="5"/><circle cx="12" cy="8" r="1.6"/><path d="M12 13v4"/></svg>Remote</button>
+  <button data-pane="design"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.8-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="14.5" cy="7" r="1"/></svg>Design</button>
+  <button data-pane="create"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>Create</button>
+</nav>
+
+<script src="/tv/designs.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var each = function (list, fn) { Array.prototype.forEach.call(list, fn); };
+  var DESIGNS = window.NOVA_DESIGNS, PRESETS = window.NOVA_PRESETS;
+  var IDEAS = [
+    "A golden retriever surfing a giant wave at sunset, slow motion",
+    "A paper boat sailing down a rainy cobblestone street, macro lens",
+    "A city in the year 2080 at dusk, flying cars between glass towers",
+    "A claymation chef flipping pancakes that turn into birds"
+  ];
+  var PHOTO_IDEAS = [
+    "They turn and smile at the camera as a breeze moves their hair",
+    "Slow cinematic push-in, the scene gently comes alive",
+    "Snow starts falling softly over everything"
+  ];
+  var BG_IDEAS = [
+    "A quiet Japanese garden in autumn, red maple leaves over a koi pond",
+    "Northern lights over a frozen lake with snowy pines",
+    "A Mediterranean village on a cliff at sunset"
+  ];
+  var S = null, engine = null, length = 5, photo = null, mode = "video", bgType = "photo";
+
+  function api(path, body) {
+    var opt = body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {};
+    return fetch(path, opt).then(function (r) { return r.json(); });
+  }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function money(v) { return v == null ? "..." : (v > 0 && v < 0.05 ? "1¢" : "$" + Number(v).toFixed(2)); }
+  function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+  function buzz() { if (navigator.vibrate) navigator.vibrate(8); }
+  function isImage(it) { return /\.(jpg|jpeg|png|webp)$/i.test(it.file); }
+
+  // ---- tabs
+  each(document.querySelectorAll("nav button"), function (b) {
+    b.onclick = function () {
+      each(document.querySelectorAll("nav button"), function (x) { x.classList.toggle("on", x === b); });
+      each(document.querySelectorAll(".pane"), function (p) { p.classList.toggle("on", p.id === "pane-" + b.getAttribute("data-pane")); });
+      window.scrollTo(0, 0);
+    };
+  });
+
+  // a link can open a tab directly, e.g. /remote#design
+  var startTab = document.querySelector('nav button[data-pane="' + location.hash.slice(1) + '"]');
+  if (startTab) setTimeout(function () { startTab.click(); }, 0);
+
+  // ---- remote buttons (header back + home, d-pad, keys, jump cards)
+  each(document.querySelectorAll("[data-cmd]"), function (b) {
+    b.addEventListener("click", function () { buzz(); api("/api/remote", { cmd: b.getAttribute("data-cmd") }); });
+  });
+
+  // ---- the phone wears the TV's background
+  function bgUrl(bg) {
+    if (bg && bg.type === "item" && S) {
+      var it = S.items.filter(function (i) { return i.id === bg.id; })[0];
+      if (it) return "/library/" + (it.poster || it.file);
+    }
+    return "/tv/backgrounds/" + (bg && bg.type === "preset" ? bg.id : "misty-coast") + ".jpg";
+  }
+
+  // ---- design tab
+  function renderDesign() {
+    $("designs").innerHTML = DESIGNS.map(function (d) {
+      var on = Object.keys(d.p).every(function (k) { return same(d.p[k], S.prefs[k]); });
+      return '<button class="pcard' + (on ? " on" : "") + '" data-d="' + d.id + '"><div class="th" style="background-image:url(\'/tv/designs/' + d.id +
+        '.jpg\')">' + (on ? '<span class="tag">On now</span>' : '') + '</div><div class="nm">' + d.name + '</div><div class="sb">' + d.desc + '</div></button>';
+    }).join("");
+    each($("designs").children, function (b) {
+      b.onclick = function () {
+        var d = DESIGNS.filter(function (x) { return x.id === b.getAttribute("data-d"); })[0];
+        buzz(); api("/api/prefs", d.p).then(poll);
+      };
+    });
+    var bgs = PRESETS.map(function (p) { return { bg: { type: "preset", id: p[0] }, name: p[1], img: "/tv/backgrounds/" + p[0] + ".jpg" }; });
+    S.items.forEach(function (it) {
+      if (it.kind === "background" || it.kind === "wallpaper") bgs.push({ bg: { type: "item", id: it.id }, name: it.title + (isImage(it) ? "" : " (moving)"), img: "/library/" + (it.poster || it.file) });
+    });
+    $("bgs").innerHTML = bgs.map(function (b, i) {
+      return '<button class="bgcard' + (same(b.bg, S.prefs.bg) ? " on" : "") + '" data-i="' + i + '" style="background-image:url(\'' + b.img + '\')"><span>' + esc(b.name) + '</span></button>';
+    }).join("");
+    each($("bgs").children, function (el) {
+      el.onclick = function () { buzz(); api("/api/prefs", { bg: bgs[Number(el.getAttribute("data-i"))].bg }).then(poll); };
+    });
+    $("bgType").innerHTML = [["photo", "Photo"], ["living", "Moving"]].map(function (t) {
+      return '<button class="' + (t[0] === bgType ? "on" : "") + '" data-v="' + t[0] + '">' + t[1] + '</button>';
+    }).join("");
+    each($("bgType").children, function (b) { b.onclick = function () { bgType = b.getAttribute("data-v"); renderDesign(); }; });
+    if (bgType === "photo") $("bgPrice").textContent = money(S.bg_price);
+    else api("/api/price?engine=" + S.engine + "&duration=10").then(function (r) { $("bgPrice").textContent = money(r.usd); });
+  }
+  $("bgChips").innerHTML = BG_IDEAS.map(function (t) { return '<button class="chip glass">' + esc(t) + '</button>'; }).join("");
+  each($("bgChips").children, function (b, i) { b.onclick = function () { $("bgPrompt").value = BG_IDEAS[i]; }; });
+
+  // ---- create tab
+  function renderCreate() {
+    var isPhoto = mode === "photo";
+    $("mode").innerHTML = [["video", "Video"], ["photo", "Photo to video"]].map(function (t) {
+      return '<button class="' + (t[0] === mode ? "on" : "") + '" data-v="' + t[0] + '">' + t[1] + '</button>';
+    }).join("");
+    each($("mode").children, function (b) { b.onclick = function () { mode = b.getAttribute("data-v"); renderCreate(); }; });
+    $("photoPart").classList.toggle("hidden", !isPhoto);
+    $("promptLabel").textContent = isPhoto ? "What should happen in the photo?" : "Describe your video";
+    $("prompt").placeholder = isPhoto ? PHOTO_IDEAS[0] : IDEAS[0];
+    var ideas = isPhoto ? PHOTO_IDEAS : IDEAS;
+    $("chips").innerHTML = ideas.map(function (t) { return '<button class="chip glass">' + esc(t) + '</button>'; }).join("");
+    each($("chips").children, function (b, i) { b.onclick = function () { $("prompt").value = ideas[i]; }; });
+    $("engines").innerHTML = Object.keys(S.engines).map(function (e) {
+      return '<button class="opt glass' + (e === engine ? " on" : "") + '" data-v="' + e + '"><b>' + esc(S.engines[e].label) + '</b><span>' + esc(S.engines[e].note) + '</span></button>';
+    }).join("");
+    each($("engines").children, function (b) { b.onclick = function () { engine = b.getAttribute("data-v"); renderCreate(); }; });
+    $("lengths").innerHTML = [5, 10].map(function (n) {
+      return '<button class="opt glass' + (n === length ? " on" : "") + '" data-v="' + n + '"><b>' + n + ' seconds</b><span>' + (n === 5 ? "Quicker to make" : "Longer scene") + '</span></button>';
+    }).join("");
+    each($("lengths").children, function (b) { b.onclick = function () { length = Number(b.getAttribute("data-v")); renderCreate(); }; });
+    $("send").textContent = isPhoto ? "Bring it to life" : "Send to TV";
+    api("/api/price?engine=" + engine + "&duration=" + length).then(function (r) { $("price").textContent = money(r.usd); });
+  }
+  $("photoPick").onclick = function () { $("photoFile").click(); };
+  $("photoFile").onchange = function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var img = new Image(), url = URL.createObjectURL(f);
+    img.onload = function () {
+      var k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      photo = c.toDataURL("image/jpeg", 0.9);
+      $("photoBox").innerHTML = '<img alt="" src="' + photo + '">';
+      $("photoPick").textContent = "Choose a different photo";
+    };
+    img.src = url;
+  };
+
+  function send(btn, msg, body, label, after) {
+    msg.className = "msg"; msg.textContent = "";
+    btn.disabled = true; btn.textContent = "Sending...";
+    body.from = "phone";
+    api("/api/create", body).then(function (r) {
+      btn.disabled = false; btn.textContent = label;
+      if (!r.ok) { msg.className = "msg err"; msg.textContent = r.error; return; }
+      msg.textContent = "Sent. Watch the TV, it shows up when it's ready.";
+      if (after) after();
+      poll();
+    }).catch(function () {
+      btn.disabled = false; btn.textContent = label;
+      msg.className = "msg err"; msg.textContent = "Couldn't reach the TV. Are you on the same Wi-Fi?";
+    });
+  }
+  $("send").onclick = function () {
+    var p = $("prompt").value.trim(), label = mode === "photo" ? "Bring it to life" : "Send to TV";
+    if (mode === "photo" && !photo) { $("msg").className = "msg err"; $("msg").textContent = "Choose a photo first."; return; }
+    if (mode !== "photo" && !p) { $("msg").className = "msg err"; $("msg").textContent = "Describe what you want to see first."; return; }
+    send(this, $("msg"), { kind: mode, prompt: p, engine: engine, duration: length, image: mode === "photo" ? photo : null }, label, function () {
+      $("prompt").value = "";
+      if (mode === "photo") { photo = null; $("photoBox").textContent = "No photo yet"; $("photoPick").textContent = "Choose a photo"; }
+    });
+  };
+  $("bgSend").onclick = function () {
+    var p = $("bgPrompt").value.trim();
+    if (!p) { $("bgMsg").className = "msg err"; $("bgMsg").textContent = "Describe your view, or tap an idea."; return; }
+    send(this, $("bgMsg"), { kind: bgType === "photo" ? "background" : "wallpaper", prompt: p, duration: 10 }, "Send to TV", function () { $("bgPrompt").value = ""; });
+  };
+
+  // ---- "play on the TV" + status of things being made
+  function renderMade() {
+    var items = S.items.slice(0, 10);
+    $("madeBox").classList.toggle("hidden", !items.length);
+    $("made").innerHTML = items.map(function (it) {
+      var kind = { video: "Video", photo: "From a photo", wallpaper: "Moving background", background: "Background" }[it.kind] || "Video";
+      return '<button class="pcard" data-id="' + it.id + '"><div class="th" style="background-image:url(\'/library/' + encodeURI(it.poster || it.file) +
+        '\')"></div><div class="nm">' + esc(it.title) + '</div><div class="sb">' + kind + '</div></button>';
+    }).join("");
+    each($("made").children, function (b) { b.onclick = function () { buzz(); api("/api/remote", { cmd: "play:" + b.getAttribute("data-id") }); }; });
+    var words = { queued: "Starting", uploading: "Sending photo", making: "Making", saving: "Almost ready", done: "On the TV", failed: "Didn't work" };
+    var jobs = S.jobs.slice(0, 5);
+    $("jobsBox").classList.toggle("hidden", !jobs.length);
+    $("jobs").innerHTML = jobs.map(function (j) {
+      var st = j.status === "making" && j.phase === "queued" ? "Waiting in line" : (words[j.status] || j.status);
+      return '<div class="job"><div class="t">' + esc(j.title) + '</div><div class="s ' + j.status + '">' + st + '</div></div>';
+    }).join("");
+  }
+
+  // ---- live state
+  var timer = null, lastKey = "";
+  function poll() {
+    clearTimeout(timer);
+    return api("/api/state").then(function (st) {
+      var first = !S;
+      S = st;
+      $("conn").classList.remove("off");
+      $("connText").textContent = "Connected to your TV";
+      if (first) { engine = S.engine; renderCreate(); }
+      var key = JSON.stringify([S.prefs, S.items.length, S.jobs.map(function (j) { return j.status; })]);
+      if (key !== lastKey) {
+        lastKey = key;
+        $("wall").style.backgroundImage = "url('" + bgUrl(S.prefs.bg) + "')";
+        renderDesign();
+        renderMade();
+      }
+    }).catch(function () {
+      $("conn").classList.add("off");
+      $("connText").textContent = "Can't reach the TV";
+    }).then(function () { timer = setTimeout(poll, 2500); });
+  }
+  poll();
+})();
+</script>
+</body>
+</html>

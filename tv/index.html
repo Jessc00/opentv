@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenTV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=Instrument+Serif&family=Nunito:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tv/app.css">
+</head>
+<body>
+<div id="stage" class="font-modern tiles-glass labels-both logo-white layout-grid">
+
+  <!-- background: a photo or a living video, picked in Appearance -->
+  <div id="bg">
+    <img id="bgImg" alt="">
+    <video id="bgVideo" muted loop playsinline></video>
+    <div id="bgShade"></div>
+  </div>
+
+  <!-- HOME: the launcher -->
+  <section id="home" class="screen active">
+    <div id="homeInner">
+      <div id="clockBox">
+        <div id="time"></div>
+        <div id="date"></div>
+      </div>
+      <div id="quick">
+        <button class="qbtn focusable" data-key="q-studio" data-tip="AI Studio"><img src="/tv/logos/higgsfield.svg" alt=""></button>
+        <button class="qbtn focusable" data-key="q-look" data-tip="Appearance"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.8-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="14.5" cy="7" r="1.2"/><circle cx="17" cy="11" r="1.2"/></svg></button>
+        <button class="qbtn focusable" data-key="q-settings" data-tip="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      </div>
+      <div id="hero">
+        <div class="eyebrow" id="heroEyebrow">Good evening</div>
+        <h1>What are we watching tonight?</h1>
+      </div>
+      <div id="tiles"></div>
+      <div id="preview"></div>
+      <div id="tip"></div>
+    </div>
+  </section>
+
+  <!-- APPEARANCE: a live builder; every change shows on the home screen behind it -->
+  <aside id="look" class="hidden">
+    <div class="sheetHead">
+      <div class="eyebrow">Appearance</div>
+      <h2>Make it yours</h2>
+    </div>
+    <div id="lookRows"></div>
+    <div class="sheetFoot">Left and right change a setting. Changes save as you go.</div>
+  </aside>
+
+  <!-- CHOOSE APPS -->
+  <section id="apps" class="screen">
+    <div class="panel glassPanel">
+      <div class="panelHead">
+        <div class="eyebrow">Home screen</div>
+        <h2>Choose your apps</h2>
+        <p class="lede">Select an app to add it or take it off. They show up in the order you pick them.</p>
+      </div>
+      <div id="appGrid"></div>
+    </div>
+  </section>
+
+  <!-- DESIGNS -->
+  <section id="designs" class="screen">
+    <div class="panel glassPanel">
+      <div class="panelHead">
+        <div class="eyebrow">Appearance</div>
+        <h2>Pick a design</h2>
+        <p class="lede">Each one is a starting point. You can still change any part of it in Appearance.</p>
+      </div>
+      <div id="designGrid"></div>
+    </div>
+  </section>
+
+  <!-- AI STUDIO -->
+  <section id="studio" class="screen">
+    <div class="panel glassPanel">
+      <div class="panelHead row">
+        <div>
+          <div class="eyebrow">AI Studio</div>
+          <h2>What do you want to make?</h2>
+        </div>
+        <div class="poweredBy"><span class="hfTile"><img src="/tv/logos/higgsfield.svg" alt=""></span>Powered by Higgsfield</div>
+      </div>
+      <div id="studioCards"></div>
+      <div class="sectionTitle" id="creationsTitle">Your creations</div>
+      <div class="rail" id="creations"></div>
+    </div>
+  </section>
+
+  <!-- MAKE A VIDEO / PHOTO TO VIDEO -->
+  <section id="make" class="screen">
+    <div class="panel glassPanel">
+      <div class="panelHead">
+        <div class="eyebrow" id="makeEyebrow">Make a video</div>
+        <h2 id="makeTitle">What should it show?</h2>
+      </div>
+      <div class="makeGrid">
+        <div class="makeLeft">
+          <div id="photoBox" class="photoBox hidden">
+            <img id="photoPreview" alt="">
+            <div id="photoEmpty"><div class="big">No photo yet</div><div class="small">Choose one here, or send it from your phone.</div></div>
+          </div>
+          <div class="photoActions hidden" id="photoActions"><button class="btn neutral focusable" id="pickPhoto">Choose a photo</button></div>
+          <input type="file" id="fileInput" accept="image/*" hidden>
+          <label class="fieldLabel" id="promptLabel" for="prompt">Describe your video</label>
+          <textarea id="prompt" class="focusable" rows="3"></textarea>
+          <div class="chips" id="makeIdeas"></div>
+        </div>
+        <div class="makeRight">
+          <div class="fieldLabel">Video model</div>
+          <div class="options" id="engineOpts"></div>
+          <div class="fieldLabel">Length</div>
+          <div class="options" id="lengthOpts"></div>
+          <div class="priceLine"><span>This costs about</span> <b id="price">...</b></div>
+          <button class="btn primary focusable" id="makeGo">Make this video</button>
+          <div class="hint" id="makeError"></div>
+          <div class="phoneHint"><canvas class="qr" data-size="110"></canvas><div>Typing is easier on your phone. Scan to send ideas from there.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEW BACKGROUND -->
+  <section id="bgmake" class="screen">
+    <div class="panel glassPanel">
+      <div class="panelHead">
+        <div class="eyebrow">New background</div>
+        <h2>Describe your perfect view</h2>
+      </div>
+      <div class="makeGrid">
+        <div class="makeLeft">
+          <label class="fieldLabel" for="bgPrompt">What should be on your screen?</label>
+          <textarea id="bgPrompt" class="focusable" rows="2" placeholder="A quiet Japanese garden in autumn, red maple leaves over a koi pond"></textarea>
+          <div class="chips" id="bgIdeas"></div>
+        </div>
+        <div class="makeRight">
+          <div class="fieldLabel">Type</div>
+          <div class="options" id="bgTypeOpts"></div>
+          <div class="priceLine"><span>This costs about</span> <b id="bgPrice">...</b></div>
+          <button class="btn primary focusable" id="bgGo">Make my background</button>
+          <div class="hint" id="bgError"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALL CREATIONS -->
+  <section id="library" class="screen">
+    <div class="panel glassPanel">
+      <div class="panelHead"><div class="eyebrow">AI Studio</div><h2>Everything you've made</h2></div>
+      <div class="libGrid" id="libGrid"></div>
+    </div>
+  </section>
+
+  <!-- PHONE REMOTE -->
+  <section id="phone" class="screen">
+    <div class="panel glassPanel center">
+      <div class="eyebrow">Phone remote</div>
+      <h2>Scan with your phone camera</h2>
+      <canvas class="qr big" data-size="330"></canvas>
+      <div class="url" id="remoteUrl"></div>
+      <p class="lede">Type ideas, send photos, change the background, and steer the TV. Your phone needs to be on the same Wi-Fi.</p>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settings" class="screen">
+    <div class="panel glassPanel narrow">
+      <div class="panelHead"><div class="eyebrow">Settings</div><h2>Your Higgsfield account</h2>
+        <p class="lede">AI Studio makes everything on your own Higgsfield account. Get a key at cloud.higgsfield.ai.</p></div>
+      <div class="keyStatus" id="keyStatus"></div>
+      <label class="fieldLabel" for="keyId">API key</label>
+      <input id="keyId" class="focusable" autocomplete="off" placeholder="Paste your API key">
+      <label class="fieldLabel" for="keySecret">Secret</label>
+      <input id="keySecret" class="focusable" type="password" autocomplete="off" placeholder="Paste your secret">
+      <div class="fieldLabel">Default video model</div>
+      <div class="options" id="defaultEngineOpts"></div>
+      <div class="btnRow">
+        <button class="btn primary focusable" id="saveSettings">Save settings</button>
+        <button class="btn neutral focusable" id="openPhone">Connect your phone</button>
+      </div>
+      <div class="hint" id="settingsMsg"></div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </section>
+
+  <!-- PLAYER -->
+  <section id="player" class="screen">
+    <video id="playerVideo" playsinline></video>
+    <img id="playerImg" alt="">
+    <div id="playerOverlay">
+      <div class="eyebrow" id="playerKind"></div>
+      <h2 id="playerTitle"></h2>
+      <p id="playerPrompt"></p>
+      <div class="btnRow">
+        <button class="btn neutral focusable" id="pPlay">Pause</button>
+        <button class="btn neutral focusable" id="pWall">Use as background</button>
+        <button class="btn neutral focusable" id="pDelete">Delete</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- BACK + HOME: on every screen except home -->
+  <nav id="nav">
+    <button class="nbtn focusable" data-key="nav-back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Back</button>
+    <button class="nbtn focusable" data-key="nav-home"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h4.5v-6h3v6H18V9.5"/></svg>Home</button>
+  </nav>
+
+  <!-- READY CARD: stays until you pick an option -->
+  <div id="ready" class="hidden">
+    <img id="readyPoster" alt="">
+    <div class="readyText">
+      <div class="eyebrow" id="readyEyebrow">Ready to watch</div>
+      <div class="readyTitle" id="readyTitle"></div>
+      <div class="btnRow">
+        <button class="btn primary focusable" id="readyWatch">Watch now</button>
+        <button class="btn neutral focusable" id="readyLater">Later</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAKING PILL: shows while anything is being made -->
+  <div id="making" class="hidden"><span class="dot"></span><span id="makingText"></span></div>
+
+  <!-- CONFIRM -->
+  <div id="confirm" class="hidden">
+    <div class="confirmBox">
+      <h3 id="confirmText"></h3>
+      <div class="btnRow">
+        <button class="btn neutral focusable" id="confirmNo">Keep it</button>
+        <button class="btn danger focusable" id="confirmYes">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <!-- SCREENSAVER -->
+  <div id="saver" class="hidden"><div class="saverClock" id="saverClock"></div></div>
+</div>
+<script src="/vendor/qrcode.js"></script>
+<script src="/tv/designs.js"></script>
+<script src="/tv/app.js"></script>
+</body>
+</html>
